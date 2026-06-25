@@ -17,6 +17,7 @@ const testPaketleri = {
         { text: "Özellikle modifiye kültürüyle efsaneleşen Nissan serisi hangisidir?", options: ["Supra", "Skyline GT-R", "Lancer Evolution", "RX-7"], correct: 1 }
     ],
     oyun: [
+        { text: "pubg de havadan atılan yardım paketine ne denir", options: ["1", "airDrop", "havayastığı", "philips"], correct: 0 },
         { text: "Counter-Strike 2'de sis bombası (Smoke) yaklaşık kaç saniye boyunca aktif kalır?", options: ["9", "12", "15", "18"], correct: 2 },
         { text: "Europa Universalis IV (EU4) ana senaryosu hangi yılda başlar?", options: ["1444", "1453", "1492", "1500"], correct: 0 },
         { text: "Detroit: Become Human oyununda polis departmanı için çalışan androidin adı nedir?", options: ["Markus", "Kara", "Simon", "Connor"], correct: 3 }
