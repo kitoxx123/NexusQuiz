@@ -148,9 +148,24 @@ const PORT = process.env.PORT || 3000;
 const ADMIN_USERNAME = process.env.ADMIN_USER || "admin";
 const ADMIN_PASSWORD = process.env.ADMIN_PASS || "Nexus123!";
 
-// 2. Admin Paneli Sayfası Yönlendirmesi
-app.get('/admin', (req, res) => {
+// 2. Güvenlik Kilidi Fonksiyonu (Şifre Kontrolü)
+function adminSecured(req, res, next) {
+    const auth = { login: ADMIN_USERNAME, password: ADMIN_PASSWORD };
+    const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
+    const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
+
+    if (login && password && login === auth.login && password === auth.password) {
+        return next();
+    }
+
+    res.set('WWW-Authenticate', 'Basic realm="Admin Paneli Girişi"');
+    res.status(401).send('Giriş reddedildi. Yönetici bilgileri gerekli.');
+}
+
+// 3. Şifre Korumalı Admin Sayfası Yönlendirmesi
+app.get('/admin', adminSecured, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
 });
 server.listen(PORT, () => {
     console.log(`Sunucu ${PORT} portunda çalışıyor`);
