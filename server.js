@@ -143,7 +143,6 @@ io.on('connection', (socket) => {
     });
 });
 
-const PORT = process.env.PORT || 3000;
 // ==========================================
 // YÖNETİCİ PANELİ VE GÜVENLİK AYARLARI
 // ==========================================
@@ -171,11 +170,8 @@ app.get('/admin', adminSecured, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-// 4. Sunucuyu Başlatma (Port Ayarı)
+// 4. Sunucuyu Başlatma (Tek Bir Port Dinleme Olmalı)
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Sunucu ${PORT} portunda aktif.`);
-});
-server.listen(PORT, () => {
-    console.log(`Sunucu ${PORT} portunda çalışıyor`);
 });
