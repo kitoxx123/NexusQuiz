@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>NexusQuiz - Yönetim Paneli</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #0b0c10; color: #ffffff; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: #1f2833; padding: 30px; border-radius: 12px; }
+        h1, h2 { color: #66fcf1; }
+        input, select, button { width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #45f3ff; background: #0b0c10; color: white; box-sizing: border-box; }
+        button { background: #66fcf1; color: #0b0c10; font-weight: bold; cursor: pointer; }
+        .radio-group { display: flex; gap: 15px; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>⚙️ NexusQuiz Yönetim Paneli</h1>
+    
+    <div class="section">
+        <h2>1. Site Görünüm & Yeni Kategori Ayarları</h2>
+        <label>Sol Üst Logo İsmi:</label>
+        <input type="text" id="siteName">
+        
+        <label>Arka Plan Rengi:</label>
+        <input type="color" id="bgColor" style="height:40px;">
+
+        <label>➕ Yeni Kategori Oluştur:</label>
+        <input type="text" id="newCategory" placeholder="Örn: Felinoloji (Kediler) veya Heavy Metal">
+        
+        <button onclick="ayarlariKaydet()">Ayarları ve Kategoriyi Kaydet</button>
+    </div>
+
+    <div class="section">
+        <h2>2. Kolay Soru Ekleme</h2>
+        <label>Hangi Kategoriye Eklensin?</label>
+        <select id="kategori"></select>
+
+        <label>Soru Cümlesi:</label>
+        <input type="text" id="soruMetni">
+        <input type="text" id="sikA" placeholder="A Şıkkı">
+        <input type="text" id="sikB" placeholder="B Şıkkı">
+        <input type="text" id="sikC" placeholder="C Şıkkı">
+        <input type="text" id="sikD" placeholder="D Şıkkı">
+
+        <label>Doğru Cevap:</label>
+        <select id="dogruCevap">
+            <option value="0">A Şıkkı</option>
+            <option value="1">B Şıkkı</option>
+            <option value="2">C Şıkkı</option>
+            <option value="3">D Şıkkı</option>
+        </select>
+        <button onclick="soruEkle()">Soruyu Sisteme Yükle</button>
+    </div>
+</div>
+
+<script>
+    function verileriYukle() {
+        fetch('/api/ayarlar')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('siteName').value = data.isim;
+                document.getElementById('bgColor').value = data.renk;
+                
+                const katSelect = document.getElementById('kategori');
+                katSelect.innerHTML = "";
+                data.kategoriler.forEach(k => {
+                    katSelect.innerHTML += `<option value="${k.id}">${k.name}</option>`;
+                });
+            });
+    }
+    window.onload = verileriYukle;
+
+    function ayarlariKaydet() {
+        const isim = document.getElementById('siteName').value;
+        const renk = document.getElementById('bgColor').value;
+        const yeniKategori = document.getElementById('newCategory').value;
+        
+        fetch('/api/ayarlar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isim, renk, yeniKategori, motif: 'grid' })
+        })
+        .then(res => res.json())
+        .then(data => {
+            alert(data.message);
+            document.getElementById('newCategory').value = "";
+            verileriYukle();
+        });
+    }
+
+    function soruEkle() {
+        const kategori = document.getElementById('kategori').value;
+        const text = document.getElementById('soruMetni').value;
+        const a = document.getElementById('sikA').value;
+        const b = document.getElementById('sikB').value;
+        const c = document.getElementById('sikC').value;
+        const d = document.getElementById('sikD').value;
+        const correct = document.getElementById('dogruCevap').value;
+
+        if(!text || !a || !b || !c || !d) return alert('Boş alan bırakmayın!');
+
+        fetch('/api/soru-ekle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ kategori, text, options: [a,b,c,d], correct })
+        })
+        .then(res => res.json())
+        .then(data => {
+            alert(data.message);
+            document.getElementById('soruMetni').value = "";
+            document.getElementById('sikA').value = "";
+            document.getElementById('sikB').value = "";
+            document.getElementById('sikC').value = "";
+            document.getElementById('sikD').value = "";
+        });
+    }
+</script>
+</body>
+</html>
