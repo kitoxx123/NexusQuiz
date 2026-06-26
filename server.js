@@ -148,4 +148,6 @@ io.on('connection', (socket) => {
 const ADMIN_USERNAME = process.env.ADMIN_USER || "admin";
 const ADMIN_PASSWORD = process.env.ADMIN_PASS || "Nexus123!";
 
-function admin
+function adminSecured(req, res, next) {
+    const auth = { login: ADMIN_USERNAME, password: ADMIN_PASSWORD };
+    const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
