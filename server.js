@@ -18,6 +18,7 @@ const testPaketleri = {
     ],
     ders: [
         { text: "2+1 kaçtır?", options: ["1", "2", "3", "4"], correct: 2 },
+    ],
     oyun: [
         { text: "pubg de havadan atılan yardım paketine ne denir", options: ["1", "airDrop", "havayastığı", "philips"], correct: 0 },
         { text: "Counter-Strike 2'de sis bombası (Smoke) yaklaşık kaç saniye boyunca aktif kalır?", options: ["9", "12", "15", "18"], correct: 2 },
