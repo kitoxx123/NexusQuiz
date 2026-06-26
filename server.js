@@ -167,7 +167,7 @@ function adminSecured(req, res, next) {
 
 // 3. Şifre Korumalı Admin Sayfası Yönlendirmesi
 app.get('/admin', adminSecured, (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+    res.sendFile(path.resolve(__dirname, 'public', 'admin.html'));
 });
 
 // 4. Sunucuyu Başlatma (Başına tekrar "const" yazmıyoruz, çünkü yukarıda zaten tanımlı)
