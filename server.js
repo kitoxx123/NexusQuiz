@@ -148,13 +148,16 @@ const ADMIN_USERNAME = process.env.ADMIN_USER || "admin";
 const ADMIN_PASSWORD = process.env.ADMIN_PASS || "Nexus123!";
 
 function adminSecured(req, res, next) {
-    const auth = { login: ADMIN_USERNAME, password: ADMIN_PASSWORD };
     const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
     const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
 
-    if (login && password && login === auth.login && password === auth.password) {
+    if (login === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
         return next();
     }
+
+    res.header('WWW-Authenticate', 'Basic realm="Admin"');
+    return res.status(401).send('Giriş gerekli.');
+}
 
     res.set('WWW-Authenticate', 'Basic realm="Admin Paneli Girişi"');
     return res.status(401).send('Giriş reddedildi. Yönetici bilgileri gerekli.');
