@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+const fs = require('fs'); // Kalıcı dosya kaydı için gerekli kütüphane
 
 const app = express();
 const server = http.createServer(app);
@@ -11,7 +12,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// CANLI AYARLAR VE KATEGORİ DEPOSU
+// Kalıcı veri dosyasının yolu
+const AYAR_DOSYASI = path.join(__dirname, 'ayarlar.json');
+
+// VAYSAYILAN DEPO (Eğer dosya yoksa ilk açılışta bu yüklenecek)
 let siteAyarlari = {
     isim: "NexusQuiz",
     motif: "grid",
@@ -24,6 +28,26 @@ let siteAyarlari = {
         { id: "muzik", name: "Ağır Metal" }
     ]
 };
+
+// Sunucu açılırken eski kayıtlı verileri dosyadan oku
+if (fs.existsSync(AYAR_DOSYASI)) {
+    try {
+        const data = fs.readFileSync(AYAR_DOSYASI, 'utf8');
+        siteAyarlari = JSON.parse(data);
+        console.log("Kayıtlı site ayarları başarıyla yüklendi.");
+    } catch (err) {
+        console.log("Ayar dosyası okunurken hata oluştu, varsayılanlar yükleniyor.");
+    }
+}
+
+// Verileri dosyaya kalıcı kaydeden fonksiyon
+function verileriKaydet() {
+    try {
+        fs.writeFileSync(AYAR_DOSYASI, JSON.stringify(siteAyarlari, null, 2), 'utf8');
+    } catch (err) {
+        console.log("Dosya kaydedilirken hata oluştu:", err);
+    }
+}
 
 const testPaketleri = {
     arabalar: [
@@ -117,7 +141,7 @@ io.on('connection', (socket) => {
 });
 
 // ==========================================
-// GÜVENLİ ADMİN PANELİ KÖPRÜLERİ
+// ŞİFRE KORUMA SİSTEMİ
 // ==========================================
 const ADMIN_USERNAME = process.env.ADMIN_USER || "admin";
 const ADMIN_PASSWORD = process.env.ADMIN_PASS || "Nexus123!";
@@ -130,7 +154,7 @@ function adminSecured(req, res, next) {
     return res.status(401).send('Giriş gerekli.');
 }
 
-// ARTIK BURASI DA KİLİTLİ: Şifre girmeden admin.html yüklenmeyecek
+// Güvenli Sayfa Yönlendirmesi
 app.get('/admin', adminSecured, (req, res) => { 
     res.sendFile(path.join(__dirname, 'public', 'admin.html')); 
 });
@@ -151,7 +175,10 @@ app.post('/api/ayarlar', adminSecured, (req, res) => {
             siteAyarlari.kategoriler.push({ id: yeniId, name: yeniKategori });
         }
     }
-    res.json({ status: "success", message: "Değişiklikler başarıyla kaydedildi!" });
+    
+    // Değişiklik olunca dosyaya kalıcı olarak yaz
+    verileriKaydet();
+    res.json({ status: "success", message: "Değişiklikler kalıcı olarak kaydedildi!" });
 });
 
 app.post('/api/soru-ekle', adminSecured, (req, res) => {
