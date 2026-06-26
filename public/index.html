@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexusQuiz - Giriş</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #0b0c10; color: white; transition: background 0.5s; margin:0; padding:20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 8px; }
+        .logo { font-size: 24px; font-weight: bold; color: #66fcf1; }
+        
+        .setup-container { max-width: 500px; margin: 40px auto; background: #1f2833; padding: 30px; border-radius: 12px; border: 1px solid #45f3ff; text-align: center; }
+        input, button { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #45f3ff; background: #0b0c10; color: white; box-sizing: border-box; }
+        button { background: #66fcf1; color: #0b0c10; font-weight: bold; cursor: pointer; font-size: 16px; }
+        button:hover { background: #45f3ff; }
+
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-top: 20px; }
+        .card { background: #1f2833; padding: 20px; border-radius: 8px; text-align: center; border: 1px solid #45f3ff; cursor: pointer; transition: 0.3s; }
+        .card:hover { background: #45f3ff; color: #0b0c10; font-weight: bold; transform: translateY(-3px); }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="logo" id="siteLogo">NexusQuiz</div>
+    <div>🎮 Hoş Geldiniz</div>
+</div>
+
+<!-- KULLANICI ADI GİRİŞ EKRANI -->
+<div class="setup-container" id="loginScreen">
+    <h2>🎮 NexusQuiz'e Giriş</h2>
+    <input type="text" id="usernameInput" placeholder="Kullanıcı adınızı yazın..." value="Oyuncu_1">
+    <button onclick="kullaniciKaydet()">Devam Et ➔</button>
+</div>
+
+<!-- DİNAMİK KATEGORİ SEÇİM EKRANI -->
+<div id="categoryScreen" style="display: none; max-width: 900px; margin: 0 auto; margin-top: 30px;">
+    <h2>Test Kategorisini Seçin ve Oyuna Başlayın</h2>
+    <div class="grid-container" id="kategoriListesi">
+        <!-- Kategoriler Sunucudan Dinamik Gelecek -->
+    </div>
+</div>
+
+<script>
+    let benimKullaniciAdim = "";
+
+    // Sunucudan ayarları ve dinamik kategorileri yükle
+    function ayarlariVeKategorileriYukle() {
+        fetch('/api/ayarlar')
+            .then(res => res.json())
+            .then(data => {
+                document.body.style.backgroundColor = data.renk;
+                document.getElementById('siteLogo').innerText = data.isim;
+                
+                const liste = document.getElementById('kategoriListesi');
+                liste.innerHTML = "";
+                data.kategoriler.forEach(k => {
+                    liste.innerHTML += `
+                        <div class="card" onclick="oyunaYonlendir('${k.id}')">
+                            <h3>${k.name}</h3>
+                            <p>Odayı Kur ➔</p>
+                        </div>
+                    `;
+                });
+            });
+    }
+
+    function kullaniciKaydet() {
+        const input = document.getElementById('usernameInput').value;
+        if (!input.trim()) return alert("Lütfen geçerli bir isim yazın!");
+        benimKullaniciAdim = input;
+        
+        document.getElementById('loginScreen').style.display = "none";
+        document.getElementById('categoryScreen').style.display = "block";
+        ayarlariVeKategorileriYukle();
+    }
+
+    // Seçilen kategoriyi ve kullanıcı adını url parametresi olarak oda.html'e gönderir
+    function oyunaYonlendir(kategoriId) {
+        window.location.href = `/oda.html?username=${encodeURIComponent(benimKullaniciAdim)}&kategori=${encodeURIComponent(kategoriId)}`;
+    }
+</script>
+</body>
+</html>
