@@ -17,7 +17,7 @@ const testPaketleri = {
         { text: "Özellikle modifiye kültürüyle efsaneleşen Nissan serisi hangisidir?", options: ["Supra", "Skyline GT-R", "Lancer Evolution", "RX-7"], correct: 1 }
     ],
     ders: [
-        { text: "2+1 kaçtır?", options: ["1", "2", "3", "4"], correct: 2 },
+        { text: "2+1 kaçtır?", options: ["1", "2", "3", "4"], correct: 2 }
     ],
     oyun: [
         { text: "pubg de havadan atılan yardım paketine ne denir", options: ["1", "airDrop", "havayastığı", "philips"], correct: 0 },
@@ -48,7 +48,6 @@ io.on('connection', (socket) => {
     socket.on('oda-olustur', (data) => {
         const { username, secilenTest } = data;
         const odaKodu = Math.floor(1000 + Math.random() * 9000).toString();
-        
         const sorular = testPaketleri[secilenTest] || [{text:"Bu kategoriye henüz soru eklenmedi!", options:["A","B","C","D"], correct:0}];
 
         odalar[odaKodu] = { 
@@ -151,3 +150,22 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASS || "Nexus123!";
 function adminSecured(req, res, next) {
     const auth = { login: ADMIN_USERNAME, password: ADMIN_PASSWORD };
     const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
+    const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
+
+    if (login && password && login === auth.login && password === auth.password) {
+        return next();
+    }
+
+    res.set('WWW-Authenticate', 'Basic realm="Admin Paneli Girişi"');
+    return res.status(401).send('Giriş reddedildi. Yönetici bilgileri gerekli.');
+}
+
+app.get('/admin', adminSecured, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+// Sunucuyu Başlatma
+const PORT = process.env.PORT || 3000; 
+server.listen(PORT, () => {
+    console.log(`Sunucu ${PORT} portunda aktif.`);
+});
