@@ -9,8 +9,14 @@
         
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
         
-        body { background: #0f172a; color: #f8fafc; min-height: 100vh; overflow-x: hidden; }
-
+        body {
+            background-color: #0b0c10;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px; /* Karelerin büyüklüğünü buradan ayarlayabilirsin */
+            color: #ffffff;
+        }
         /* ÜST MENÜ (NAVBAR) */
         nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 5%; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.1); position: sticky; top: 0; z-index: 100; }
         .logo { font-size: 24px; font-weight: 800; color: #38bdf8; letter-spacing: -1px; cursor: pointer; }
@@ -95,7 +101,7 @@
 <body>
 
     <nav id="navbar">
-        <div class="logo" onclick="sayfaYenile()">⚡ TriviaPlay</div>
+        <div class="logo" onclick="sayfaYenile()">⚡ NexusQuiz</div>
         <button class="nav-btn" onclick="modalAc('modal-katil')">PİN İle Katıl</button>
     </nav>
 
