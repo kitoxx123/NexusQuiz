@@ -170,8 +170,8 @@ app.get('/admin', adminSecured, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-// 4. Sunucuyu Başlatma (Tek Bir Port Dinleme Olmalı)
-const PORT = process.env.PORT || 3000;
+// 4. Sunucuyu Başlatma (Başına tekrar "const" yazmıyoruz, çünkü yukarıda zaten tanımlı)
+PORT = process.env.PORT || 3000; 
 server.listen(PORT, () => {
     console.log(`Sunucu ${PORT} portunda aktif.`);
 });
