@@ -25,7 +25,6 @@ let siteAyarlari = {
     ]
 };
 
-// Soru Havuzu (Kategoriler dinamik olarak buraya eklenebilecek)
 const testPaketleri = {
     arabalar: [
         { text: "Logosunda şahlanan at bulunan, ünlü İtalyan spor otomobil markası hangisidir?", options: ["Porsche", "Ferrari", "Lamborghini", "Maserati"], correct: 1 },
@@ -72,7 +71,6 @@ io.on('connection', (socket) => {
         io.to(odaKodu).emit('oyuncu-listesi', oda.oyuncular);
     });
 
-    // Soru gönderme ve diğer soket işlemleri aynen kalıyor...
     function soruGonder(odaKodu) {
         const oda = odalar[odaKodu];
         if (!oda) return;
@@ -119,7 +117,7 @@ io.on('connection', (socket) => {
 });
 
 // ==========================================
-// API YOLLARI
+// GÜVENLİ ADMİN PANELİ KÖPRÜLERİ
 // ==========================================
 const ADMIN_USERNAME = process.env.ADMIN_USER || "admin";
 const ADMIN_PASSWORD = process.env.ADMIN_PASS || "Nexus123!";
@@ -132,10 +130,15 @@ function adminSecured(req, res, next) {
     return res.status(401).send('Giriş gerekli.');
 }
 
-app.get('/admin', adminSecured, (req, res) => { res.sendFile(path.join(__dirname, 'public', 'admin.html')); });
-app.get('/api/ayarlar', (req, res) => { res.json(siteAyarlari); });
+// ARTIK BURASI DA KİLİTLİ: Şifre girmeden admin.html yüklenmeyecek
+app.get('/admin', adminSecured, (req, res) => { 
+    res.sendFile(path.join(__dirname, 'public', 'admin.html')); 
+});
 
-// Ayarları ve Yeni Kategorileri Kaydetme Yolu
+app.get('/api/ayarlar', (req, res) => { 
+    res.json(siteAyarlari); 
+});
+
 app.post('/api/ayarlar', adminSecured, (req, res) => {
     const { isim, motif, renk, yeniKategori } = req.body;
     if (isim) siteAyarlari.isim = isim;
@@ -155,7 +158,7 @@ app.post('/api/soru-ekle', adminSecured, (req, res) => {
     const { kategori, text, options, correct } = req.body;
     if (!testPaketleri[kategori]) testPaketleri[kategori] = [];
     testPaketleri[kategori].push({ text, options, correct: parseInt(correct) });
-    res.json({ status: "success", message: "Soru havaza eklendi!" });
+    res.json({ status: "success", message: "Soru havuza eklendi!" });
 });
 
 const PORT = process.env.PORT || 3000; 
