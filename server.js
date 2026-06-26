@@ -144,6 +144,14 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
+// 1. Yönetici Giriş Bilgileri
+const ADMIN_USERNAME = process.env.ADMIN_USER || "admin";
+const ADMIN_PASSWORD = process.env.ADMIN_PASS || "Nexus123!";
+
+// 2. Admin Paneli Sayfası Yönlendirmesi
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
 server.listen(PORT, () => {
     console.log(`Sunucu ${PORT} portunda çalışıyor`);
 });
