@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>NexusQuiz - Ana Sayfa</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #0b0c10; color: white; transition: background 0.5s; margin:0; padding:20px; }
+        .header { display: flex; justify-content: space-between; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 8px; }
+        .logo { font-size: 24px; font-weight: bold; color: #66fcf1; }
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 30px; }
+        .card { background: #1f2833; padding: 20px; border-radius: 8px; text-align: center; border: 1px solid #45f3ff; cursor: pointer; transition: 0.3s; }
+        .card:hover { background: #45f3ff; color: #0b0c10; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="logo" id="siteLogo">NexusQuiz</div>
+    <div>🎮 Hoş Geldiniz</div>
+</div>
+
+<h2>Test Kategorileri</h2>
+<div class="grid-container" id="kategoriListesi">
+    </div>
+
+<script>
+    // Sunucudan ayarları ve kategorileri canlı olarak çekip sayfayı boyar
+    function sayfayiCanlandir() {
+        fetch('/api/ayarlar')
+            .then(res => res.json())
+            .then(data => {
+                // 1. Rengi ve İsim Logosunu Değiştir
+                document.body.style.backgroundColor = data.renk;
+                document.getElementById('siteLogo').innerText = data.isim;
+                
+                // 2. Dinamik Kategorileri Listele
+                const liste = document.getElementById('kategoriListesi');
+                liste.innerHTML = "";
+                data.kategoriler.forEach(k => {
+                    liste.innerHTML += `
+                        <div class="card" onclick="odaOlustur('${k.id}')">
+                            <h3>${k.name}</h3>
+                            <p>Oyunu Başlat ➔</p>
+                        </div>
+                    `;
+                });
+            });
+    }
+
+    function odaOlustur(kategoriId) {
+        alert(kategoriId + " kategorisinde oda oluşturuluyor... (Soket bağlantınız tetiklenecek)");
+        // Burası senin mevcut socket.emit('oda-olustur') kodunla entegre çalışacak
+    }
+
+    window.onload = sayfayiCanlandir;
+</script>
+</body>
+</html>
