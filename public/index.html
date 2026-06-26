@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexusQuiz</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0b0c10;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            transition: background 0.5s;
+        }
+        .container {
+            background-color: #1f2833;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+            box-sizing: border-box;
+            border: 2px solid #45f3ff;
+        }
+        h1, h2, h3 { color: #66fcf1; margin-top: 0; }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 2px solid #45f3ff;
+            border-radius: 8px;
+            background-color: #0b0c10;
+            color: #ffffff;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .btn {
+            background-color: #66fcf1;
+            color: #0b0c10;
+            border: none;
+            padding: 12px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .btn:hover { background-color: #45f3ff; transform: translateY(-2px); }
+        
+        /* Dinamik Kart Yapısı */
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 15px; width: 100%; max-width: 600px; }
+        .card { background: #1f2833; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #45f3ff; cursor: pointer; transition: 0.3s; }
+        .card:hover { background: #45f3ff; color: #0b0c10; font-weight: bold; }
+
+        /* Oyun Ekranları */
+        .screen { display: none; width: 100%; max-width: 700px; }
+        .active { display: block; }
+        
+        .code-box { font-size: 32px; font-weight: bold; color: #66fcf1; background-color: #0b0c10; padding: 15px; border-radius: 8px; margin: 20px 0; display: inline-block; letter-spacing: 5px; border: 1px solid #45f3ff; }
+        .player-list { list-style: none; padding: 0; margin: 20px 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+        .player-list li { background-color: #0b0c10; padding: 10px; border-radius: 6px; border: 1px solid #45f3ff; }
+        
+        .question-box { font-size: 24px; margin-bottom: 25px; min-height: 60px; display: flex; align-items: center; justify-content: center; font-weight: 500; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        .option-btn { background-color: #0b0c10; color: #ffffff; border: 2px solid #45f3ff; padding: 18px; font-size: 18px; border-radius: 10px; cursor: pointer; transition: all 0.2s; text-align: left; font-weight: 500; }
+        .option-btn:hover { background-color: #1f2833; border-color: #66fcf1; transform: scale(1.02); }
+        
+        .timer-bar-container { width: 100%; height: 12px; background-color: #0b0c10; border-radius: 6px; margin-bottom: 25px; overflow: hidden; border: 1px solid #45f3ff; }
+        .timer-bar { width: 100%; height: 100%; background: linear-gradient(90deg, #66fcf1, #45f3ff); transition: width 0.1s linear; }
+        
+        .score-list { list-style: none; padding: 0; margin: 25px 0; }
+        .score-list li { background-color: #0b0c10; padding: 15px; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #66fcf1; font-size: 18px; }
+        .score-val { color: #66fcf1; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen" class="container screen active">
+        <h1 id="siteLogo">NexusQuiz</h1>
+        <p>Oyun kurmak veya katılmak için isminizi girin:</p>
+        <input type="text" id="username-input" placeholder="Kullanıcı Adı" value="Oyuncu_1">
+        <button class="btn" onclick="showCategories()">Devam Et ➔</button>
+    </div>
+
+    <div id="category-screen" class="screen text-center" style="max-width: 800px;">
+        <h2 class="text-center">Bir Test Kategorisi Seçerek Oda Kurun</h2>
+        <div class="grid-container" id="kategoriListesi">
+            </div>
+    </div>
+
+    <div id="lobby-screen" class="container screen">
+        <h1 id="lobby-title">Lobi Odası</h1>
+        <p>Arkadaşlarınızın katılması için oda kodu:</p>
+        <div class="code-box" id="room-code-display">----</div>
+        <h3>Oyuncular</h3>
+        <ul class="player-list" id="players-ul"></ul>
+        <button class="btn" id="start-game-btn" onclick="startGame()">Oyunu Başlat 🚀</button>
+    </div>
+
+    <div id="game-screen" class="container screen" style="max-width: 700px;">
+        <h3 id="question-number">Soru: 1</h3>
+        <div class="timer-bar-container">
+            <div class="timer-bar" id="timer-bar"></div>
+        </div>
+        <div class="question-box" id="question-text">Soru yükleniyor...</div>
+        <div class="options-grid">
+            <button class="option-btn" onclick="submitAnswer(0)" id="opt-0">A</button>
+            <button class="option-btn" onclick="submitAnswer(1)" id="opt-1">B</button>
+            <button class="option-btn" onclick="submitAnswer(2)" id="opt-2">C</button>
+            <button class="option-btn" onclick="submitAnswer(3)" id="opt-3">D</button>
+        </div>
+    </div>
+
+    <div id="score-screen" class="container screen">
+        <h1>🏆 Skor Tablosu</h1>
+        <ul class="score-list" id="scores-ul"></ul>
+        <button class="btn" id="next-question-btn" onclick="nextQuestion()">Sonraki Soru ➔</button>
+    </div>
+
+    <script>
+        const socket = io();
+        let benimKullaniciAdim = "";
+        let currentRoomCode = "";
+        let maxDuration = 150;
+        let hasAnswered = false;
+
+        // Sayfa yüklenirken sunucudaki ayarları ve renkleri çek
+        function ayarlariveKategorileriYukle() {
+            fetch('/api/ayarlar')
+                .then(res => res.json())
+                .then(data => {
+                    document.body.style.backgroundColor = data.renk;
+                    document.getElementById('siteLogo').innerText = data.isim;
+                    
+                    const liste = document.getElementById('kategoriListesi');
+                    liste.innerHTML = "";
+                    data.kategoriler.forEach(k => {
+                        liste.innerHTML += `
+                            <div class="card" onclick="odaOlustur('${k.id}')">
+                                <h3>${k.name}</h3>
+                                <p>Oda Oluştur ➔</p>
+                            </div>
+                        `;
+                    });
+                });
+        }
+
+        function showCategories() {
+            const input = document.getElementById('username-input').value;
+            if(!input.trim()) return alert("İsim yazın!");
+            benimKullaniciAdim = input;
+            
+            switchScreen('category-screen');
+            ayarlariveKategorileriYukle();
+        }
+
+        function switchScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function odaOlustur(kategoriId) {
+            socket.emit('oda-olustur', { username: benimKullaniciAdim, secilenTest: kategoriId });
+        }
+
+        socket.on('oda-olusturuldu', (data) => {
+            currentRoomCode = data.odaKodu;
+            document.getElementById('room-code-display').innerText = data.odaKodu;
+            document.getElementById('lobby-title').innerText = "Lobi - " + data.testAdi.toUpperCase();
+            switchScreen('lobby-screen');
+            updatePlayerList(data.oyuncular);
+        });
+
+        socket.on('oyuncu-listesi', (oyuncular) => {
+            updatePlayerList(oyuncular);
+        });
+
+        function updatePlayerList(players) {
+            const ul = document.getElementById('players-ul');
+            ul.innerHTML = "";
+            players.forEach(p => {
+                ul.innerHTML += `<li>👤 ${p.name}</li>`;
+            });
+        }
+
+        function startGame() {
+            socket.emit('oyunu-baslat', currentRoomCode);
+        }
+
+        socket.on('yeni-soru', (data) => {
+            hasAnswered = false;
+            maxDuration = data.sure * 10;
+            switchScreen('game-screen');
+            
+            document.getElementById('question-number').innerText = `Soru: ${data.soruNo}`;
+            document.getElementById('question-text').innerText = data.soru.text;
+            
+            for(let i=0; i<4; i++) {
+                const btn = document.getElementById(`opt-${i}`);
+                btn.innerText = data.soru.options[i];
+                btn.style.backgroundColor = '#0b0c10';
+                btn.disabled = false;
+            }
+        });
+
+        socket.on('sure-guncelle', (kalanSure) => {
+            const pct = (kalanSure / maxDuration) * 100;
+            document.getElementById('timer-bar').style.width = pct + '%';
+        });
+
+        function submitAnswer(index) {
+            if(hasAnswered) return;
+            hasAnswered = true;
+            
+            const currentWidthPct = parseFloat(document.getElementById('timer-bar').style.width) || 0;
+            const progressRatio = currentWidthPct / 100;
+            
+            for(let i=0; i<4; i++) {
+                document.getElementById(`opt-${i}`).disabled = true;
+            }
+            document.getElementById(`opt-${index}`).style.backgroundColor = '#1f2833';
+            
+            socket.emit('cevap-ver', {
+                odaKodu: currentRoomCode,
+                secilenIndex: index,
+                gecenSureOrani: progressRatio
+            });
+        }
+
+        socket.on('skor-guncelle', (oyuncular) => {
+            switchScreen('score-screen');
+            const ul = document.getElementById('scores-ul');
+            ul.innerHTML = "";
+            oyuncular.forEach(p => {
+                ul.innerHTML += `<li><span>👑 ${p.name}</span><span class="score-val">${p.score} Puan</span></li>`;
+            });
+        });
+
+        function nextQuestion() {
+            socket.emit('sonraki-soru', currentRoomCode);
+        }
+
+        socket.on('oyun-bitti', (oyuncular) => {
+            switchScreen('score-screen');
+            document.getElementById('next-question-btn').style.display = 'none';
+            const ul = document.getElementById('scores-ul');
+            ul.innerHTML = "<h2>Oyun Bitti! Final Skorları:</h2>" + ul.innerHTML;
+        });
+
+        socket.on('hata', (msg) => { alert(msg); });
+        
+        // İlk açılışta ayarları yükle
+        window.onload = function() {
+            fetch('/api/ayarlar')
+                .then(res => res.json())
+                .then(data => {
+                    document.body.style.backgroundColor = data.renk;
+                    document.getElementById('siteLogo').innerText = data.isim;
+                });
+        };
+    </script>
+</body>
+</html>
