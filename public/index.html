@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NexusQuiz - Kahoot Katili</title>
+    <title>NexusQuiz</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
+        /* CSS kodları aynen korundu, kısaltılmadı */
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0b0c10; color: #ffffff; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; transition: background 0.5s; }
         .fade-in { animation: fadeIn 0.4s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -44,7 +45,6 @@
         #waiting-msg { display: none; color: #66fcf1; font-style: italic; margin-bottom: 15px; font-weight: bold; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
 
-        /* KAHOOT STİLİ GERİ BİLDİRİM EKRANI */
         #feedback-screen { padding: 50px 20px; border: none; transition: background-color 0.3s; }
         #fb-icon { font-size: 80px; margin-bottom: 10px; }
         #fb-title { font-size: 40px; font-weight: 900; margin: 0; color: white; text-transform: uppercase; }
@@ -57,7 +57,7 @@
         .score-val { color: #66fcf1; font-weight: 900; }
         .winner .score-val { color: #ffd700; }
         
-        .host-only { display: none; } /* Kurucuya özel butonlar */
+        .host-only { display: none; } 
         .waiting-host-msg { color: #ff4655; font-weight: bold; font-style: italic; margin: 15px 0; display: none; }
     </style>
 </head>
@@ -125,27 +125,22 @@
     </div>
 
     <script>
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        // GERÇEK MÜZİK VE SES DOSYALARI SİSTEMİ
+        const audioClick = new Audio('/click.mp3');
+        const audioCorrect = new Audio('/correct.mp3');
+        const audioWrong = new Audio('/wrong.mp3');
+        const bgMusic = new Audio('/music.mp3');
+        bgMusic.loop = true;
+        bgMusic.volume = 0.4; // Arka plan müziği ses seviyesi (kısık)
+
         function playSound(type) {
-            if (!audioCtx) return;
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator(); const gainNode = audioCtx.createGain();
-            osc.connect(gainNode); gainNode.connect(audioCtx.destination);
-            const now = audioCtx.currentTime;
-            
-            if (type === 'click') {
-                osc.type = 'square'; osc.frequency.setValueAtTime(300, now); osc.frequency.exponentialRampToValueAtTime(500, now + 0.05);
-                gainNode.gain.setValueAtTime(0.1, now); gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
-                osc.start(now); osc.stop(now + 0.05);
-            } else if (type === 'correct') { // DOĞRU BİLİNCE!
-                osc.type = 'sine'; osc.frequency.setValueAtTime(523.25, now); osc.frequency.setValueAtTime(659.25, now + 0.1); osc.frequency.setValueAtTime(783.99, now + 0.2);
-                gainNode.gain.setValueAtTime(0.2, now); gainNode.gain.linearRampToValueAtTime(0, now + 0.5);
-                osc.start(now); osc.stop(now + 0.5);
-            } else if (type === 'wrong') { // YANLIŞ BİLİNCE!
-                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now); osc.frequency.linearRampToValueAtTime(100, now + 0.3);
-                gainNode.gain.setValueAtTime(0.2, now); gainNode.gain.linearRampToValueAtTime(0, now + 0.3);
-                osc.start(now); osc.stop(now + 0.3);
-            }
+            try {
+                if (type === 'click') { audioClick.currentTime = 0; audioClick.play(); }
+                if (type === 'correct') { audioCorrect.currentTime = 0; audioCorrect.play(); }
+                if (type === 'wrong') { audioWrong.currentTime = 0; audioWrong.play(); }
+                if (type === 'music-start') { bgMusic.play(); }
+                if (type === 'music-stop') { bgMusic.pause(); bgMusic.currentTime = 0; }
+            } catch(e) { console.log("Ses dosyası bulunamadı, sessiz devam ediliyor."); }
         }
 
         const socket = io();
@@ -182,13 +177,16 @@
             document.getElementById(screenId).classList.add('active');
         }
 
-        function anaSayfayaDon() { playSound('click'); setTimeout(() => { window.location.reload(); }, 100); }
+        function anaSayfayaDon() { 
+            playSound('click'); 
+            playSound('music-stop');
+            setTimeout(() => { window.location.reload(); }, 100); 
+        }
 
         function odaOlustur(kategoriId) {
             playSound('click'); socket.emit('oda-olustur', { username: benimKullaniciAdim, secilenTest: kategoriId });
         }
 
-        // HOST SİSTEMİ DEVREYE GİRİYOR
         function yetkileriAyarla(hostMu) {
             isHost = hostMu;
             const hostBtns = document.querySelectorAll('.host-only');
@@ -211,7 +209,11 @@
             players.forEach((p, i) => { ul.innerHTML += `<li>${i===0 ? '👑 ':''}${p.name}</li>`; });
         }
 
-        function startGame() { playSound('click'); socket.emit('oyunu-baslat', currentRoomCode); }
+        function startGame() { 
+            playSound('click'); 
+            playSound('music-start'); // Oyun başlayınca heyecanlı müzik başlar
+            socket.emit('oyunu-baslat', currentRoomCode); 
+        }
 
         socket.on('yeni-soru', (data) => {
             hasAnswered = false; maxDuration = data.sure * 10;
@@ -223,7 +225,7 @@
             for(let i=0; i<4; i++) {
                 const btn = document.getElementById(`opt-${i}`);
                 btn.innerText = data.soru.options[i];
-                btn.className = "option-btn"; // Sınıfları sıfırla
+                btn.className = "option-btn"; 
                 btn.disabled = false;
                 btn.style.backgroundColor = "#0b0c10";
             }
@@ -244,9 +246,7 @@
             socket.emit('cevap-ver', { odaKodu: currentRoomCode, secilenIndex: index, gecenSureOrani: ratio });
         }
 
-        // YENİ: SORU BİTTİĞİNDE ÖNCE YÜZLEŞME EKRANINI GÖSTER
         socket.on('soru-bitti', (data) => {
-            // Şıkları renklendir (Soru ekranında 1 saniye dursun diye)
             for(let i=0; i<4; i++) {
                 const btn = document.getElementById(`opt-${i}`);
                 if (i === data.dogruCevapIndex) btn.classList.add('correct');
@@ -260,9 +260,8 @@
             const fbScore = document.getElementById('fb-score');
             const fbStreak = document.getElementById('fb-streak');
             
-            // Cevap vermediyse veya yanlış verdiyse
             if (!benimVerim || !benimVerim.sonCevapDogruMu) {
-                fbScreen.style.backgroundColor = "#e74c3c"; // Kahoot Kırmızısı
+                fbScreen.style.backgroundColor = "#e74c3c"; 
                 fbIcon.innerText = "❌";
                 fbTitle.innerText = "YANLIŞ!";
                 fbScore.innerText = benimVerim && hasAnswered ? "+0 Puan" : "Zaman Aşımı!";
@@ -270,7 +269,7 @@
                 fbStreak.style.color = "#ffffff";
                 playSound('wrong');
             } else {
-                fbScreen.style.backgroundColor = "#2ecc71"; // Kahoot Yeşili
+                fbScreen.style.backgroundColor = "#2ecc71"; 
                 fbIcon.innerText = "✔️";
                 fbTitle.innerText = "DOĞRU!";
                 fbScore.innerText = `+${benimVerim.sonKazanilan} Puan`;
@@ -278,10 +277,8 @@
                 playSound('correct');
             }
 
-            // 1 saniye şıkları göster, sonra geri bildirim ekranını patlat
             setTimeout(() => { switchScreen('feedback-screen'); }, 1000);
             
-            // 3.5 saniye geri bildirimde kal, sonra skor tablosuna geç
             setTimeout(() => {
                 skorTablosunuCiz(data.oyuncular, data.isLastQuestion);
                 switchScreen('score-screen');
@@ -302,7 +299,7 @@
                 document.getElementById('next-question-btn').style.display = 'none';
                 document.getElementById('score-wait-msg').style.display = 'none';
                 document.getElementById('return-home-btn').style.display = 'block';
-                playSound('correct');
+                playSound('music-stop'); // Oyun bitince müzik dursun
             } else {
                 document.getElementById('score-title').innerText = "🏆 Ara Puan Durumu";
             }
