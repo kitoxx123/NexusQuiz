@@ -11,7 +11,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// KALICI AYARLAR VE KATEGORİ DEPOSU (Railway sıfırlasa bile buradan okur)
+// KALICI AYARLAR VE KATEGORİ DEPOSU
 let siteAyarlari = {
     isim: "NexusQuiz",
     motif: "grid",
@@ -61,7 +61,30 @@ io.on('connection', (socket) => {
     socket.on('oda-olustur', (data) => {
         const { username, secilenTest } = data;
         const odaKodu = Math.floor(1000 + Math.random() * 9000).toString();
-        const sorular = testPaketleri[secilenTest] || [{text:"Bu kategoriye henüz soru eklenmedi!", options:["A","B","C","D"], correct:0}];
+        const orjinalSorular = testPaketleri[secilenTest] || [{text:"Bu kategoriye henüz soru eklenmedi!", options:["A","B","C","D"], correct:0}];
+
+        // 1. ADIM: Orijinal havuzu bozmamak için soruların "Derin Kopyasını" alıyoruz
+        let odaSorulari = JSON.parse(JSON.stringify(orjinalSorular));
+
+        // 2. ADIM: Soruların Sırasını Karıştır (Fisher-Yates Algoritması)
+        for (let i = odaSorulari.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [odaSorulari[i], odaSorulari[j]] = [odaSorulari[j], odaSorulari[i]];
+        }
+
+        // 3. ADIM: Her Sorunun Şıklarını Karıştır ve Doğru Cevabı Takip Et
+        odaSorulari.forEach(soru => {
+            let dogruCevapMetni = soru.options[soru.correct]; // Doğru cevabı hafızaya al
+            
+            // Şıkları Karıştır
+            for (let i = soru.options.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [soru.options[i], soru.options[j]] = [soru.options[j], soru.options[i]];
+            }
+            
+            // Doğru cevabın karıştırıldıktan sonraki yeni index'ini (0,1,2,3) bul ve sisteme kaydet
+            soru.correct = soru.options.indexOf(dogruCevapMetni);
+        });
 
         odalar[odaKodu] = { 
             hostId: socket.id,
@@ -70,7 +93,7 @@ io.on('connection', (socket) => {
             cevapVerenler: new Set(),
             durum: 'bekliyor',
             timer: null,
-            odaSoruları: sorular 
+            odaSoruları: odaSorulari // Artık dinamik ve tamamen rastgele soruları kullanıyoruz
         };
         
         socket.join(odaKodu);
@@ -184,7 +207,6 @@ function adminSecured(req, res, next) {
 app.get('/admin', adminSecured, (req, res) => { res.sendFile(path.join(__dirname, 'public', 'admin.html')); });
 app.get('/api/ayarlar', (req, res) => { res.json(siteAyarlari); });
 
-// Kategori ve Soru Ekleme Yolları (Bu veriler geçici diske kaydedilir)
 app.post('/api/ayarlar', adminSecured, (req, res) => {
     const { isim, motif, renk, yeniKategori } = req.body;
     if (isim) siteAyarlari.isim = isim;
